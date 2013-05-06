@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Hookstrap</title>
+        <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" media="screen" title="no title" charset="utf-8"/>
+        <link rel="stylesheet" href="css/font-awesome.css" type="text/css" media="screen" title="no title" charset="utf-8"/>
+        <script src="js/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/underscore.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/backbone.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/app.js" type="text/javascript" charset="utf-8"></script>
+        
+        <style>
+            .editable{
+                overflow: auto;
+            }
+           .embed-topBorder{
+            -webkit-border-radius: 3px 3px 0px 0px;
+            -moz-border-radius: 3px 3px 0px 0px;
+             border-radius: 3px 3px 0px 0px;
+           }
+          .embed-bottomBorder{
+            -webkit-border-radius: 0px 0px 3px 3px;
+            -moz-border-radius: 0px 0px 3px 3px;
+             border-radius: 0px 0px 3px 3px;
+           } 
+           .embed-noBorder {
+               border-width:0px
+           }
+           .embed-thickBorder {
+               border-width: 5px
+           }
+           .embed-thinBorder{
+               border-width: 1px;
+               padding:4px;
+           }
+           .embed {
+                position:absolute;
+                top: 0;
+                left: 0;
+                border-style: solid;
+                
+           }
+           .embed .title{
+                position:absolute;
+                padding-right: 8px;
+                padding-left: 8px;
+           }
+           .embed .menu{
+                position: absolute;
+                padding: 0px 8px 1px 8px;
+           }
+          .embed .menu ul{
+                margin: 0px;
+                list-style-type:none;
+           }
+           .embed .menu ul li {
+                line-height:0px;
+                float:left;
+           }
+           .embed .menu ul li .label{
+                color: #999;
+                -webkit-border-radius: 0px;
+                -moz-border-radius: 0px;
+                border-radius: 0px;
+           }
+          .embed .menu ul li .label:hover {
+                color: #333333;
+           }
+          
+          .embed .menu ul li .label-inverse:hover {
+                color: #fff;
+           }
+          .embed .menu ul li .label-info:hover{
+               color: #fff; 
+          }
+          .embed .menu ul li .label-important:hover{
+               color: #fff; 
+          }
+         
+         
+         
+        </style>
+        <script>
+            function take(a){
+                return "changed";
+            }
+            $(document).ready(function(){
+                var data =   {site: 'NetTuts'}, template =   'Welcome! You are at <%= take(site) %>';
+ 
+                var parsedTemplate = _.template(template,  data );
+                $('body').append(parsedTemplate);
+ 
+                console.log(parsedTemplate);               
+                       var c = new ChildView();
+                       var sc = new SubChildView();
+                       var a = {"a":1,"b":{"c":3},"k":5};
+                       var b = {"a":2,"b":{"d":4}};
+                       $.extend(true,a,b);
+                       $('body').append(c.render().el).append(sc.render().el);
+                       
+                
+        
+            })
+        </script>
+            </head>
+
+    <body>
+       
+    </body>
+</html>

@@ -1,5 +1,5 @@
 var BaseView = Backbone.View.extend({
-  
+	
     _initialize: function(){
     	console.log("Base View Initialized");
     	
@@ -40,21 +40,17 @@ var BaseView = Backbone.View.extend({
     render: function(){
     	this.renderChain = this.renderChain || this.initQueue.apply(this,[[],"_render"]);
     	this.executeQueue.apply(this,[this.renderChain]);
-    	
     	return this;
     },
     
 	unrender: function(){
 	      $this.$el.remove();
 	},
-	
-	display: true
-
 })  
 
 var EmbedMenu = BaseView.extend({
 	_config: {
-		template: '<div class="embed embed-thickBorder"><span class="label title"></span><span class="label menu"><ul></ul></span></div>',
+		template: '<div class="embed embed-thickBorder in"><span class="label title"></span><span class="label menu"><ul></ul></span></div>',
 		markup: "inverse",
 		title: "Base",
 		links: {"Remove":{
@@ -70,7 +66,7 @@ var EmbedMenu = BaseView.extend({
         return this.initQueue.apply(this,[{},"_config"]);
     },
 	_events: {
-		"dblclick": 'toggleContent',
+		"click": 'toggleContent',
 		"hover": 'toggleContent'
 	},
     _initialize: function(){
@@ -86,7 +82,7 @@ var EmbedMenu = BaseView.extend({
     	return this.$ml = this.$ml || this.tip().find('.menu');
     }
     
-    , setContent: function(){
+    , _render: function(){
     	var $tip = this.tip()
     	   , ul = $tip.find('ul')
     	   , opts = this.config();
@@ -151,22 +147,19 @@ var EmbedMenu = BaseView.extend({
          
          $l.offset(lp);
          $n.offset(np);
-         
-        
     },
     toggleContent: function(e){
-    	if(!this.initialized){
-    		this.initialized = true;
-    		this.setContent();
-    	}
-    	e.type === 'mouseenter' || e.type === 'mouseleave'?this.tip().toggleClass('title'):this.tip().toggleClass('menu');
-    	var title = this.tip().hasClass('title');
-    	var menu = this.tip().hasClass('menu');
+    	if(!this.tip().hasClass('in')) return;
+    	this.tip().show();
+    	e.type === 'mouseenter' || e.type === 'mouseleave'?this.title().toggleClass('in'):this.menu().toggleClass('in');
+    	var title = this.title().hasClass('in');
+    	var menu = this.menu().hasClass('in');
     	var border = menu?'embed-thickBorder':title?'embed-thinBorder':'embed-noBorder';
     	this.tip().removeClass('embed-thickBorder embed-thinBorder embed-noBorder').addClass(border);
     	this.menu().toggle(menu);
     	this.title().toggle(title);
-    	this.placeContent();
+    	if(menu || title)
+    		this.placeContent();
     },
    
 	unrenderContent: function(){
@@ -178,15 +171,15 @@ var EmbedMenu = BaseView.extend({
 
 var EditableView = EmbedMenu.extend({
 	_events: {
-		"click": "toggleEditable"
+		"dblclick": "toggleEditable"
 	},
 	
 	toggleEditable: function(e){
 		if(this.eArea().is("[contenteditable='true']")){
-			this.tip().show();
+			this.tip().addClass('in').show();
 			this.eArea().attr('contenteditable','false');
 		}else{
-			this.tip().hide();
+			this.tip().removeClass('in').hide();
 			this.eArea().attr('contenteditable','true');
 		}
 	},
@@ -207,7 +200,7 @@ var ChildView = EditableView.extend({
     	console.log("Child View Initialized");
     },
     _render: function(){
-    	this.$el.css({width:200,height:200,position:"absolute",top:100,left:100});
+    	this.$el.css({width:200,position:"absolute",top:100,left:100});
     },
 	showDisplay: function(){
 		console.log("Show Display at Child View");

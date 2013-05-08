@@ -1,5 +1,61 @@
+function extend(obj,queue,methodName){
+	var childObj = {};
+	while(obj && obj[methodName])
+	{
+		if(obj[methodName] != childObj[methodName]){
+			if($.isArray(queue)){
+			queue.push(obj[methodName]);
+			}else{
+			$.extend(true,queue,_.isFunction(obj[methodName])?obj[methodName]():obj[methodName]);
+			}
+			childObj = obj;	
+		}
+		obj = obj.constructor.__super__;
+	}
+	return queue;
+}
+
+
+var BaseModel = Backbone.Model.extend({
+	defaults: function() {
+        return extend.apply(this,[this,{},"_defaults"]);
+    },
+})
+
+var EmbedModel = BaseModel.extend({
+	_defaults: {
+		template: '<div class="embed embed-thickBorder in"><span class="label title"></span><span class="label menu"><ul></ul></span></div>',
+		markup: "inverse",
+		title: "Base",
+		links: {"Remove":{
+			title: "Remove",
+			icon: "icon-remove",
+			callback: function(obj, e, elem){
+				$(obj).remove();
+			}},
+		},
+		placement: "topLeft",
+	}
+})
+
+var EditableModel = EmbedModel.extend({
+	_defaults: {
+		"min-height": "40px"
+	}
+})
+
+var NonEditableModel = EmbedModel.extend({
+	_defaults: {
+		"height": "100px"
+	}
+})
+
 var BaseView = Backbone.View.extend({
-	
+	defaults: function() {
+        return this.initQueue.apply(this,[{},"_defaults"]);
+    },
+    
+	model: new BaseModel(),
     _initialize: function(){
     	console.log("Base View Initialized");
     	
@@ -12,24 +68,11 @@ var BaseView = Backbone.View.extend({
     	}
     },
     initQueue: function(queue,methodName){
-		var obj = this
-		, childObj = {};
-    	while(obj && obj[methodName])
-    	{
-    		if(obj[methodName] != childObj[methodName]){
-    			if($.isArray(queue)){
-    			queue.push(obj[methodName]);
-    			}else{
-    			$.extend(true,queue,_.isFunction(obj[methodName])?obj[methodName]():obj[methodName]);
-    			}
-    			childObj = obj;	
-    		}
-    		obj = obj.constructor.__super__;
-    	}
-    	return queue;
+		return extend(this,queue,methodName);
     },
     
     initialize: function(){
+    	this.options = _.extend(this.defaults, this.options);
     	this.initializeChain = this.initializeChain || this.initQueue.apply(this,[[],"_initialize"]);
     	this.executeQueue.apply(this,[this.initializeChain]);
     },
@@ -49,31 +92,16 @@ var BaseView = Backbone.View.extend({
 })  
 
 var EmbedMenu = BaseView.extend({
-	_config: {
-		template: '<div class="embed embed-thickBorder in"><span class="label title"></span><span class="label menu"><ul></ul></span></div>',
-		markup: "inverse",
-		title: "Base",
-		links: {"Remove":{
-			title: "Remove",
-			icon: "icon-remove",
-			callback: function(obj, e, elem){
-				$(obj).remove();
-			}},
-		},
-		placement: "topLeft",
-	},
-	config: function() {
-        return this.initQueue.apply(this,[{},"_config"]);
-    },
 	_events: {
 		"click": 'toggleContent',
 		"hover": 'toggleContent'
 	},
+	model: new EmbedModel(),
     _initialize: function(){
     	console.log("EmbedMenu Initialized");
     },
     tip: function () {
-        return this.$tip = this.$tip || $(this.config().template)
+        return this.$tip = this.$tip || $(this.model.get("template"))
     },
     title: function(){
     	return this.$tl = this.$tl || this.tip().find('.title');
@@ -85,7 +113,7 @@ var EmbedMenu = BaseView.extend({
     , _render: function(){
     	var $tip = this.tip()
     	   , ul = $tip.find('ul')
-    	   , opts = this.config();
+    	   , opts = this.model.attributes;
     	if(!_.isEmpty(opts.links)){
     		$.each(opts.links,function(key,val){
             	var con = '<i class="'+(val.icon||'')+'" title="'+(val.title||'')+'">'+(val.icon?'':val.title)+'</i>';
@@ -110,7 +138,7 @@ var EmbedMenu = BaseView.extend({
 	      }, this.$el.offset())
 	 },
 	placeContent: function(){
-    	var opts = this.config()
+    	var opts = this.model.attributes
     	, pos = this.getPosition()
     	, $tip = this.tip()
     	, $l = this.title()
@@ -168,26 +196,34 @@ var EmbedMenu = BaseView.extend({
     
 })
 
-
+var NonEditableView = EmbedMenu.extend({
+    	model: new NonEditableModel(),
+	_render:  function(){
+		this.$el.css({"height":this.model.get("height")});
+	}
+});
 var EditableView = EmbedMenu.extend({
+    model: new EditableModel(),
 	_events: {
 		"dblclick": "toggleEditable"
 	},
 	
 	toggleEditable: function(e){
 		if(this.eArea().is("[contenteditable='true']")){
-			this.tip().addClass('in').show();
-			this.eArea().attr('contenteditable','false');
+			this.eArea().removeClass("edit-Border").attr('contenteditable','false');
+			this.tip().addClass('in');
+			this.$el.trigger('click');
+			
 		}else{
 			this.tip().removeClass('in').hide();
-			this.eArea().attr('contenteditable','true');
+			this.eArea().addClass("edit-Border").attr('contenteditable','true');
 		}
 	},
 	eArea: function(){
 		return this.$eArea = this.$eArea || $('<div class="editable"></div>')
 	},
 	_render:  function(){
-		this.eArea().offset(this.$el.offset()).appendTo(this.$el);
+		this.eArea().offset(this.$el.offset()).css({"min-height":this.model.get("min-height")}).appendTo(this.$el);
 	}
 
 })
@@ -208,7 +244,7 @@ var ChildView = EditableView.extend({
 	
 });
 
-var SubChildView = ChildView.extend({
+var SubChildView = NonEditableView.extend({
 	_event: {
 		"hover": "showHover"
 	},
@@ -216,7 +252,7 @@ var SubChildView = ChildView.extend({
     	console.log("Sub Child View Initialized");
     },
     _render: function(){
-    	this.$el.css({backgroundColor: "green",top: 500, left:500});
+    	this.$el.css({backgroundColor: "green",top: 500, left:500, position: 'absolute', width: 200});
     },
 	showHover: function(){
 		console.log("Show Hover at Sub Child View");

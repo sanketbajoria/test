@@ -14,6 +14,11 @@
         <style>
             .editable{
                 overflow: auto;
+                overflow-x: hidden;
+                outline:0px solid transparent;
+            }
+            .edit-Border{
+                border: 1px dashed blue;
             }
            .embed-topBorder{
             -webkit-border-radius: 3px 3px 0px 0px;
@@ -40,6 +45,7 @@
                 top: 0;
                 left: 0;
                 border-style: solid;
+                display: none;
                 
            }
            .embed .title{
@@ -93,8 +99,8 @@
                 $('body').append(parsedTemplate);
  
                 console.log(parsedTemplate);               
-                       var c = new ChildView();
-                       var sc = new SubChildView();
+                       var c = new ChildView({model:new EditableModel({title:"Child","min-height":"100px"})});
+                       var sc = new SubChildView({model:new NonEditableModel({title:"SubChild"})});
                        var a = {"a":1,"b":{"c":3},"k":5};
                        var b = {"a":2,"b":{"d":4}};
                        $.extend(true,a,b);

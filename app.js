@@ -1,3 +1,15 @@
+Backbone.Model.prototype._super = function(funcName){
+    return this.constructor.__super__[funcName].apply(this, _.rest(arguments));
+}
+
+
+function executeQueue(queue,bottom){
+    	var i = bottom?0:queue.length-1;
+    	while((bottom && i<queue.length) ||(!bottom && i>=0)){
+    		queue[i].apply(this);
+    		i=bottom?i+1:i-1;
+    	}
+ }
 function extend(obj,queue,methodName){
 	var childObj = {};
 	while(obj && obj[methodName])
@@ -14,7 +26,55 @@ function extend(obj,queue,methodName){
 	}
 	return queue;
 }
+var BaseSchema = Backbone.Model.extend({
+	defaults: function(){
+		return extend.apply(this,[this,{},"schemas"]);
+	}
+});
 
+var NonEditableSchema = BaseSchema.extend({
+	schemas: {
+		"height": 'Text'
+	}
+	
+})
+
+var SideBar = Backbone.View.extend({
+	initialize: function(){
+	    // subscribe to the event aggregator's event
+	    Backbone.on("click:comp", this.updateView, this);
+	  },
+	  events: {
+		    "change": "fieldChanged",
+	  },
+	fieldChanged : function(e) {
+		var field = $(e.currentTarget);
+		var val;
+		if(field.is('input:text,input:password,textarea')){
+			val = field.val();
+		}else if(field.is('select')){
+			val = $("option:selected", field).val();	
+		}else if(field.is('input:checkbox,input:radio')){
+			val = field.attr('name')?$("input[name="+field.attr('name')+"]:checked", this.$el).val():field.is(':checked');
+		}
+		data[field.attr('id')] = val;
+		this.model.set(data);
+		console.log(this.model.attributes);
+	},  
+	render: function(){
+		
+		return this;
+	},
+	updateView:function(model, schema){
+		this.model = model;
+		this.schema = schema;
+		render();
+	}  
+	  
+	
+},{template:_.template(
+		
+		)});
 
 var BaseModel = Backbone.Model.extend({
 	defaults: function() {
@@ -51,38 +111,33 @@ var NonEditableModel = EmbedModel.extend({
 })
 
 var BaseView = Backbone.View.extend({
-	defaults: function() {
-        return this.initQueue.apply(this,[{},"_defaults"]);
-    },
-    
-	model: new BaseModel(),
     _initialize: function(){
     	console.log("Base View Initialized");
-    	
     },
-    executeQueue: function(queue,bottom){
-    	var i = bottom?0:queue.length-1;
-    	while((bottom && i<queue.length) ||(!bottom && i>=0)){
-    		queue[i].apply(this);
-    		i=bottom?i+1:i-1;
-    	}
+    _options:{
+    	model: new BaseModel(),
+    	schema: "BaseView"
     },
+    
     initQueue: function(queue,methodName){
 		return extend(this,queue,methodName);
     },
     
     initialize: function(){
-    	this.options = _.extend(this.defaults, this.options);
     	this.initializeChain = this.initializeChain || this.initQueue.apply(this,[[],"_initialize"]);
-    	this.executeQueue.apply(this,[this.initializeChain]);
+    	executeQueue.apply(this,[this.initializeChain]);
     },
+    options: function(){
+    	return this.initQueue.apply(this,[{},"_options"]);
+    },
+    
     events: function() {
         return this.initQueue.apply(this,[{},"_events"]);
     },
     
     render: function(){
     	this.renderChain = this.renderChain || this.initQueue.apply(this,[[],"_render"]);
-    	this.executeQueue.apply(this,[this.renderChain]);
+    	executeQueue.apply(this,[this.renderChain]);
     	return this;
     },
     
@@ -96,7 +151,11 @@ var EmbedMenu = BaseView.extend({
 		"click": 'toggleContent',
 		"hover": 'toggleContent'
 	},
-	model: new EmbedModel(),
+	_options: {
+		model: new EmbedModel(),
+		schema: "EmbedMenu"
+	},
+	
     _initialize: function(){
     	console.log("EmbedMenu Initialized");
     },
@@ -188,22 +247,31 @@ var EmbedMenu = BaseView.extend({
     	this.title().toggle(title);
     	if(menu || title)
     		this.placeContent();
+    	if(e.type === 'click'){
+    		Backbone.trigger('click:comp',this.model,this.options.schema)
+    	}
     },
    
-	unrenderContent: function(){
+	unrender: function(){
 	    this.tip().hide();
 	},
     
 })
 
 var NonEditableView = EmbedMenu.extend({
-    	model: new NonEditableModel(),
+	_options:{
+		model: new NonEditableModel(),
+		schema: 'NonEditableView'
+	},
 	_render:  function(){
 		this.$el.css({"height":this.model.get("height")});
 	}
 });
 var EditableView = EmbedMenu.extend({
-    model: new EditableModel(),
+	_options:{
+		model: new EditableModel(),
+		name: 'EditableView'
+	},
 	_events: {
 		"dblclick": "toggleEditable"
 	},

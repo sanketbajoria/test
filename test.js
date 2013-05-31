@@ -1,3 +1,51 @@
+
+;(function(_) {
+	function executeQueue(queue,bottom){
+    	var i = bottom?0:queue.length-1;
+    	while((bottom && i<queue.length) ||(!bottom && i>=0)){
+    		queue[i].apply(this);
+    		i=bottom?i+1:i-1;
+    	}
+	}
+	function extend(obj, fn) {
+		var queue = obj[fn][fn+'chain'];
+		if(!_.isUndefined(queue)){
+			var queue = obj[fn][fn+'chain'] = []
+			, childObj = obj;
+			while (childObj) {
+				queue.push(childObj[fn]);
+				childObj = findSuper(fn, childObj);
+			}
+		}
+		
+	}
+	function _super(fn) {
+		 
+	    // Keep track of how far up the prototype chain we have traversed,
+	    // in order to handle nested calls to _super.
+	    this._superObj || (this._superObj = {});
+	    this._superObj[fn]  = findSuper(fn, this._superObj[fn] || this);
+	 
+	 	var result = this._superObj[fn][fn]; // Attribute. Maybe change the variable name.
+		if (_.isFunction(result)) result = result.apply(this, _.rest(arguments));
+	    delete this._superObj[fn];
+	    return result;
+	  }
+	 
+	  // Find the next object up the prototype chain that has a
+	  // different implementation of the method.
+	  function findSuper(fn, childObject) {
+	    var object = childObject;
+	    while (object[fn] === childObject[fn]) {
+	      object = object.constructor.__super__;
+	    }
+	    return object;
+	  }
+
+_.each(["Model", "Collection", "View", "Router"], function(c) {
+    Backbone[c].prototype._super = _super;
+  });
+})(_);
 /**
  * Backbone.Validator
  *
@@ -346,7 +394,7 @@ Backbone.Validator = (function(_){
 })(_);
 
 
-
+(function(_){
 
 var Form = Backbone.Form = Backbone.View.extend({
 
@@ -614,7 +662,7 @@ var Form = Backbone.Form = Backbone.View.extend({
    */
   setValue: function(prop, val) {
     var data = {};
-    if (typeof prop === 'string') {
+    if (_.isString(prop)) {
       data[prop] = val;
     } else {
       data = prop;
@@ -622,7 +670,7 @@ var Form = Backbone.Form = Backbone.View.extend({
 
     var key;
     for (key in this.schema) {
-      if (data[key] !== undefined) {
+      if (!_.isUndefined(data[key])) {
         this.fields[key].val(data[key]);
       }
     }
@@ -1097,9 +1145,6 @@ var BaseView = Backbone.View.extend({
     	this.initializeChain = this.initializeChain || this.initQueue.apply(this,[[],"_initialize"]);
     	this.executeQueue.apply(this,[this.initializeChain,options]);
     },
-    options: function(){
-    	return this.initQueue.apply(this,[{},"_options"]);
-    },
     
     events: function() {
         return this.initQueue.apply(this,[{},"_events"]);
@@ -1522,3 +1567,4 @@ Form.editors.Checkboxes = Form.editors.Radio.extend({
 	
 });
 
+})(_);

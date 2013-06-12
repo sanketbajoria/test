@@ -6,17 +6,56 @@
         <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" media="screen" title="no title" charset="utf-8"/>
         <link rel="stylesheet" href="css/font-awesome.css" type="text/css" media="screen" title="no title" charset="utf-8"/>
         <script src="js/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="js/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/jquery-ui.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="js/underscore.min.js" type="text/javascript" charset="utf-8"></script>
         <script src="js/backbone.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="js/test.js" type="text/javascript" charset="utf-8"></script>
-      
+		<script src="js/test.js" type="text/javascript" charset="utf-8"></script>
+        <script src="js/app2.js" type="text/javascript" charset="utf-8"></script>
+        <script type="text/template" id="search_template">
+        	<form>
+        		<% _.each(schema,function(value,key){
+					var type = value["type"] && _.isObject(value)?'Text':value;
+					if(type==='Text' || type==='Password' || type==='TextArea'){
+					%>
+					<label><%=key%></label><input type='<%=type%>' name='<%=key%>' />
+					<%}
+					else if(type==='Select'){
+					%><select name='<%=key%>'>
+						<% for(var i=0;i<value.options;i++){%>
+						<option value="<%=value.options[i]%>"><%=value.options[i]%></option>
+					</select>
+					<%
+					}else if(type==="Checkbox"){
+					%>
+					<label class='<%=type.toLowerCase()%> inline'><%=key%><input type='<%=type%>' name='<%=key%>' /></label>
+					<%	
+					}else if(type==="Radio"
+					
+					
+					
+					}
+					
+				});
+				%>
+        	</form>
+		
+		</script>
         <style>
             .editable{
                 overflow: auto;
                 overflow-x: hidden;
                 outline:0px solid transparent;
+				min-height: 100px;
+				z-index: 10;
+				position:relative;
             }
+			.noneditable{
+				height:100px;
+				z-index: 10;
+				position:relative;
+			}
+			
             .edit-Border{
                 border: 1px dashed blue;
             }
@@ -31,45 +70,50 @@
              border-radius: 0px 0px 3px 3px;
            } 
            .embed-noBorder {
-               border-width:0px
+               border-width: 0px;
            }
            .embed-thickBorder {
-               border-width: 3px
+               border-width: 3px;
            }
            .embed-thinBorder{
                border-width: 1px;
-               padding:2px;
            }
            .embed {
                 position:absolute;
                 top: 0;
                 left: 0;
                 border-style: solid;
+				border-color: black;
                 display: none;
-                
            }
+		   .embed .menu span.label{
+		   	padding: 1px 2px;
+		   }
            .embed .title{
                 position:absolute;
-                padding-right: 8px;
-                padding-left: 8px;
+				padding: 1px 8px;
+				z-index: 9999;
            }
            .embed .menu{
                 position: absolute;
                 padding: 0px 8px 1px 8px;
+				z-index: 9999;
            }
           .embed .menu ul{
                 margin: 0px;
-                list-style-type:none;
+                list-style:none;
            }
+		   
            .embed .menu ul li {
                 line-height:0px;
-                float:left;
+                display: inline-block;
            }
            .embed .menu ul li .label{
                 color: #999;
                 -webkit-border-radius: 0px;
                 -moz-border-radius: 0px;
                 border-radius: 0px;
+				font-size: 10px;
            }
           .embed .menu ul li .label:hover {
                 color: #333333;
@@ -84,170 +128,58 @@
           .embed .menu ul li .label-important:hover{
                color: #fff; 
           }
-         
+         .choice {
+         	position:relative;
+         	min-height:40px;
+			border: 1px solid black;
+			margin: 3px;
+			float: left;
+         }
+		 .choiceInteraction{
+		 	width: 450px;
+			min-height:200px;
+			height: auto;
+			padding: 30px;
+			position:relative;
+			border: 1px solid red;
+		 }
          
          
         </style>
         <script>
-          var Text = Backbone.View.extend({
-				events:{
-					'keypress': function(e,elem){
-						var newVal = this.$el.val() + String.fromCharCode(e.charCode);
-						if(!(/^[0-9]*\.?[0-9]*?$/.test(newVal))){
-							e.preventDefault();
-						}
-					}
-				},
-				tagName: 'input',
-				render: function(){
-					this.$el.attr('type','text');
-					return this;
-				}
-			});
-			var Checkbox = Backbone.View.extend({
-				events:{
-					'change': function(e){
-						console.log("Reached here")
-					}
-				},
-				tagName: 'input',
-				render: function(){
-					this.$el.attr('type','checkbox');
-					return this;
-				}
-			});
-			var Form = Backbone.View.extend({
-				events: {
-					'change':function(){console.log("Change input")}
-				},
-				tagName: 'form',
-				render: function(){
-					var text = new Checkbox();
-					this.$el.append(text.render().el);
-					return this;
-				}
-			});
             function take(a){
                 return "changed";
             }
-			
-			var User = Backbone.Model.extend({
-                schema: {
-                    title: {
-                        type: 'Select',
-                        options: ['Mr', 'Mrs', 'Ms']
-                    },
-                    name: 'Text',
-                    email: 'Text',
-                    password: 'Password',
-                
-                },
-                validation: {
-                    name: {
-                        required: true,
-                        message: 'Name is required'
-                    },
-                    
-                    email: {
-                        required: true,
-                        format: 'email',
-                        message: 'Does not match format'
-                    },
-                }
-            
-            });
-            
-            var user = new User();
-            
-            var form1 = new Backbone.Form({
-                model: user
-            }).render();
-
- Backbone.View.prototype._super = function(fn) {
- 
-    // Keep track of how far up the prototype chain we have traversed,
-    // in order to handle nested calls to _super.
-    this._superObj || (this._superObj = {});
-    this._superObj[fn]  = findSuper(fn, this._superObj[fn] || this);
- 
- 	var result = this._superObj[fn][fn]; // Attribute. Maybe change the variable name.
-	if (_.isFunction(result)) result = result.apply(this, _.rest(arguments));
-    delete this._superObj[fn];
-    return result;
-  }
- 
-  // Find the next object up the prototype chain that has a
-  // different implementation of the method.
-  function findSuper(methodName, childObject) {
-    var object = childObject;
-    while (object[methodName] === childObject[methodName]) {
-      object = object.constructor.__super__;
-    }
-    return object;
-  }
-var Test = Backbone.View.extend({
-	initialize: function(options){
-		console.log("Test initialized");
-		console.log(options);
-	}
-})
-var Child = Test.extend({
-	initialize: function(options){
-		this._super('initialize',options);
-		console.log("Child initialized");
-		console.log(options);
-	}
-});
-
-var SubChild = Child.extend({
-	
-})
-var SubSubChild = SubChild.extend({
-	initialize: function(options){
-		this._super('initialize',options);
-		console.log("SubSubChild initialized");
-		console.log(options);
-	}
-})
             $(document).ready(function(){
                 var data =   {site: 'NetTuts'}, template =   'Welcome! You are at <%= take(site) %>';
- 				$('.test input[type="checkbox"]').val(_.flatten("a"))
+ 
                 var parsedTemplate = _.template(template,  data );
                 $('body').append(parsedTemplate);
  
-             	var form = new Form();
-                       $('body').append(form.render().el);
-				form["abcd"] = {"a":5}
-					   console.log(_.result(form,"abc"))
-                       
-					   $('.test input[type="checkbox"]').on('change',function(){
-					   		console.log($('.test input[type="checkbox"]:checked').map(function() {
-		      return $(this).val();
-	    }).get());
-					   });
-                $('body').append(form1.el);
-				
-				var sc = new SubSubChild({model: new Backbone.Model()});
-        
+                console.log(parsedTemplate);               
+                       var c = new ChildView({title:"Child","min-height":"400px"});
+                       var sc = new SubChildView({title:"SubChild"});
+					   var choice = new ChoiceInteraction();
+					   var schema = new SchemaView();
+                       var a = {"a":1,"b":{"c":3},"k":5};
+                       var b = {"a":2,"b":{"d":4}};
+                       $.extend(true,a,b);
+                       //$('#mainbar').append(c.render().el).append(sc.render().el).append();
+                       $('#mainbar').append(choice.render().el)
+                	$('#sidebar').append(schema.render().el);
+        	$("#base").on("hover",function(){
+				console.log("Hover base");				
+			});
+			$("#child").on("hover",function(){
+				console.log("Hover Child")
+			})
+			
             })
-			
-			
-            
-
         </script>
             </head>
 
     <body>
-       <div class="test">
-       	<label class="checkbox inline">
-       		<input type="checkbox" value="a" name="abc" />A
-       	</label>
-		<label class="checkbox inline">
-       		<input type="checkbox" value="b" name="abc"/>B
-       	</label>
-		<label class="checkbox inline">
-       		<input type="checkbox" value="c" name="abc"/>C
-       	</label>
-       </div>
+       <div id="mainbar" style="width:70%;float:left;padding:30px"><div id="base" style="border:1px solid black;position:absolute"><ul style="list-style:none;"><li style="float:left">1</li>2<li style="float:left"></li></ul></div></div></div>
+	   <div id="sidebar" style="width:30%;float:left;padding:10px"></div>
     </body>
 </html>

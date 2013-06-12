@@ -3,7 +3,7 @@ var App = {}
 
 
 var EmbedMenu = Backbone.BaseView.extend({
-  _events: {
+	_events: {
 		"click": 'toggleContent',
 		"hover": 'toggleContent'
 	},
@@ -15,6 +15,7 @@ var EmbedMenu = Backbone.BaseView.extend({
 			title: "Remove",
 			icon: "icon-remove",
 			callback: function(e){
+				this.tip().remove();
 				this.$el.remove();
 			}}
 		},
@@ -22,8 +23,24 @@ var EmbedMenu = Backbone.BaseView.extend({
 	},
 	
     _initialize: function(){
-    	var self = this;
-    	
+    	var $tip = this.tip()
+ 	   	, ul = $tip.find('ul')
+ 	   	, opts = this.options
+ 	   	, self = this;
+    	if(!_.isEmpty(opts.links)){
+ 		$.each(opts.links,function(key,val){
+         	var con = '<i class="'+(val.icon||'')+'" title="'+(val.title||'')+'">'+(val.icon?'':val.title)+'</i>';
+         	$('<li><a href="javascript:void(0)"><span class="label">'+con+'</span></a></li>').appendTo(ul).on('click',function(e){
+         		val.callback.apply(self,[e]);
+         		e.preventDefault();
+         		e.stopPropagation();
+         	});
+         });
+    	}
+    	if(opts.title){
+        	this.title().text(opts.title);
+        }
+        $tip.find('.label').addClass(opts.markup === 'default'?'label':'label-'+opts.markup)
     	console.log("EmbedMenu Initialized");
     },
     tip: function () {
@@ -37,24 +54,8 @@ var EmbedMenu = Backbone.BaseView.extend({
     }
     
     , _render: function(){
-    	var $tip = this.tip()
-    	   , ul = $tip.find('ul')
-    	   , opts = this.options
-    	   , self = this;
-    	if(!_.isEmpty(opts.links)){
-    		$.each(opts.links,function(key,val){
-            	var con = '<i class="'+(val.icon||'')+'" title="'+(val.title||'')+'">'+(val.icon?'':val.title)+'</i>';
-            	$('<li><a href="javascript:void(0)"><span class="label">'+con+'</span></a></li>').appendTo(ul).on('click',function(e){
-            		val.callback.apply(self,[e]);
-            		e.preventDefault();
-            		e.stopPropagation();
-            	});
-            });
-    	}
-        if(opts.title){
-        	this.title().text(opts.title);
-        }
-        $tip.find('.label').addClass(opts.markup === 'default'?'label':'label-'+opts.markup)
+    	
+        
     }
     , getPosition: function () {
 	      var el = this.$el[0]
@@ -168,8 +169,8 @@ var EditableView = EmbedMenu.extend({
 			this.$el.addClass("edit-Border").attr('contenteditable','true');
 		}
 	},
-	_render:  function(){
-		this.$el.addClass('editable');
+	_initialize:  function(){
+		this.$el.addClass('editable').addClass(this.options["styleClass"]);
 		//this.eArea().offset(this.$el.offset()).addClass(this.options["styleClass"]).appendTo(this.$el);
 	}
 
@@ -206,6 +207,7 @@ var ChoiceModel = Backbone.BaseModel.extend({
 
 var Choice = EditableView.extend({
 	_options:{
+		title: "Choice",
 		model: new ChoiceModel(),
 		styleClass: 'choice'
 	}
@@ -215,7 +217,7 @@ var ChoiceInteractionModel = Backbone.BaseModel.extend({
 		shuffle: false,
 		maxChoices: 1,
 		minChoices: 0,
-		layout: 'Linear',
+		column: 1, 
 		orientation: 'Vertical',
 		choices:[]
 	},
@@ -223,13 +225,23 @@ var ChoiceInteractionModel = Backbone.BaseModel.extend({
 		shuffle: 'Checkbox',
 		maxChoices: 'Number',
 		minChoices: 'Number',
-		layout: {type:'Select', options:['Linear','Grid']},
+		column: 'Number',
 		orientation:{type:'Select',options:['Vertical','Horizontal']}
 	}
 })
 
 var ChoiceInteraction = NonEditableView.extend({
+	_initialize: function(){
+		var self = this;
+		this.$el.append("<div class='choices'></div>").find('.choices').sortable().on('sort',function(e){
+			_.each(self.model.get("choices"),function(c){
+				c.placeContent(false,false);
+			});
+		});
+		this.model.on('change',this.render,this);
+	},
 	_options:{
+		title: "ChoiceInteraction",
 		model: new ChoiceInteractionModel(),
 		styleClass: 'choiceInteraction',
 		links: {
@@ -239,10 +251,27 @@ var ChoiceInteraction = NonEditableView.extend({
 				callback: function(e){
 					var choice = new Choice();
 					this.model.get("choices").push(choice);
-					this.$el.append(choice.render().el);
+					this.$el.find('.choices').append(choice.render().el);
 					this.placeContent(true,true);
-				}}
-		}
+					this.model.trigger('change');
+				}},
+			"Remove":{
+					title: "Remove",
+					icon: "icon-remove",
+					callback: function(e){
+						this.tip().remove();
+						this.$el.remove();
+						this.model.trigger('change');
+					}}
+				}
+	},
+	_render: function(){
+		var col = this.model.get('column');
+		var width = this.$el.width();
+		_.each(this.model.get("choices"),function(c){
+			var wid = width/col;
+			c.$el.width(wid);
+		});
 	}
 })
 
